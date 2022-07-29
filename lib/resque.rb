@@ -430,6 +430,7 @@ module Resque
   #
   # This method is considered part of the `stable` API.
   def enqueue(klass, *args)
+    p "Enqueueing to class #{klass}. Queue from class #{queue_from_class(klass)}. Resque.rb 433"
     enqueue_to(queue_from_class(klass), klass, *args)
   end
 
@@ -444,16 +445,21 @@ module Resque
   # This method is considered part of the `stable` API.
   def enqueue_to(queue, klass, *args)
     # Perform before_enqueue hooks. Don't perform enqueue if any hook returns false
+    p "before before hooks"
     before_hooks = Plugin.before_enqueue_hooks(klass).collect do |hook|
       klass.send(hook, *args)
     end
+    p "before returning nil"
     return nil if before_hooks.any? { |result| result == false }
 
+    p "before creating job"
     Job.create(queue, klass, *args)
+    p "after creating job"
 
     Plugin.after_enqueue_hooks(klass).each do |hook|
       klass.send(hook, *args)
     end
+    p "after enqueue hooks. returning..."
 
     return true
   end

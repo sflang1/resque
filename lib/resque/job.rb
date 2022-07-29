@@ -85,7 +85,9 @@ module Resque
     #
     # Raises an exception if no queue or class is given.
     def self.create(queue, klass, *args)
+      p "in self.create job.rb:88"
       Resque.validate(klass, queue)
+      p "after resque validate. inline? #{Resque.inline?}"
 
       if Resque.inline?
         # Instantiating a Resque::Job and calling perform on it so callbacks run
@@ -148,6 +150,7 @@ module Resque
     # Calls #perform on the class given in the payload with the
     # arguments given in the payload.
     def perform
+      p "called perform!"
       job = payload_class
       job_args = args || []
       job_was_performed = false
@@ -155,6 +158,7 @@ module Resque
       begin
         # Execute before_perform hook. Abort the job gracefully if
         # Resque::Job::DontPerform is raised.
+        p "before before hooks, in job#perform"
         begin
           before_hooks.each do |hook|
             job.send(hook, *job_args)
@@ -163,8 +167,10 @@ module Resque
           return false
         end
 
+        p "before around hooks, in job#perform. Around hooks? #{around_hooks.count}"
         # Execute the job. Do it in an around_perform hook if available.
         if around_hooks.empty?
+          p "calling class perform with no around hooks"
           job.perform(*job_args)
           job_was_performed = true
         else
@@ -178,6 +184,7 @@ module Resque
             else
               lambda do
                 job.send(hook, *job_args) do
+                  p "calling class perform with around hooks"
                   result = job.perform(*job_args)
                   job_was_performed = true
                   result
